@@ -64,11 +64,11 @@
     <distributionManagement>
         <repository>
             <id>nexus</id>
-            <url>http://13.51.237.106:8081/repository/dobretech-repo/</url>
+            <url>http://15.164.178.173:8081/repository/dobretech-repo/</url>
         </repository>
         <snapshotRepository>
             <id>nexus</id>
-            <url>http://13.51.237.106:8081/repository/dobretech-repo-snap/</url>
+            <url>http://15.164.178.173:8081/repository/dobretech-repo-snap/</url>
         </snapshotRepository>
     </distributionManagement>
 
