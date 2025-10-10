@@ -3,7 +3,7 @@
   hosts: app_server
   become: yes
   vars:
-    tomcat_version: 11.0.6
+    tomcat_version: 11.0.10
     tomcat_user: tomcat
     tomcat_group: tomcat
     tomcat_install_dir: /opt/tomcat
