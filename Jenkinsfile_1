@@ -1,36 +1,73 @@
 pipeline {
     agent any
+
     tools {
-        jdk 'JDK17'
-        maven 'maven3.9.11'
+        jdk 'JDK17'                // Must match the name configured in Jenkins
+        maven 'maven3.9.11'        // Same here
     }
+
+    environment {
+        VERSION = "${new Date().format('yyyyMMddHHmmss')}"  // auto versioning
+    }
+
     stages {
-        stage('GitClone') {
+
+        stage('Git Clone') {
             steps {
-                echo 'Cloning the latest application version'
-                git branch: 'main', url: 'https://github.com/dobretechproject/maven-web-pro1'
+                echo '📥 Cloning the latest application version...'
+                git branch: 'main', url: 'https://github.com/dobretechproject/maven-web-pro1.git'
             }
         }
-        stage('Test+Build') {
+
+        stage('Build & Test') {
             steps {
-                sh 'echo Running unit testing'
-                sh 'mvn clean package'
-                echo 'Test successful and backup artifacts created'
+                echo '🧪 Running unit tests and building the project...'
+                sh 'mvn clean package -DskipTests=false'
+                echo '✅ Tests passed and WAR file created.'
             }
         }
-        stage('codeQuality') {
+
+        stage('Code Quality - SonarQube') {
+            environment {
+                SONARQUBE_TOKEN = credentials('SONARQUBE_TOKEN')  // create in Jenkins
+            }
             steps {
-                sh 'echo Running detail code analysis'
-                sh 'mvn sonar:sonar'
-                sh 'echo All conditions met/passed'
+                echo '🔍 Running SonarQube analysis...'
+                withSonarQubeEnv('sonarqube') {
+                    sh """
+                        mvn sonar:sonar \
+                        -Dsonar.login=$SONARQUBE_TOKEN
+                    """
+                }
             }
         }
-        stage('upLoadArtifacts') {
+
+        stage('Upload Artifacts to Nexus') {
             steps {
-                sh 'echo Deploying artifacts'
-                sh 'mvn deploy'
-                sh 'echo backupArtifacts in nexus'
+                echo '📤 Uploading build artifacts to Nexus...'
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus',     // must exist in Jenkins
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASS'
+                )]) {
+                    sh """
+                        mvn deploy \
+                        -Dnexus.username=$NEXUS_USER \
+                        -Dnexus.password=$NEXUS_PASS \
+                        -Dbuild.version=${VERSION}
+                    """
+                }
+                echo '✅ Artifacts successfully pushed to Nexus.'
             }
+        }
+    }
+
+    post {
+        success {
+            echo "🎉 CI pipeline completed successfully for version ${VERSION}"
+        }
+        failure {
+            echo "❌ CI pipeline failed. Check logs for details."
         }
     }
 }
